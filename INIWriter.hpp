@@ -63,19 +63,34 @@ namespace samilton {
 
 		/*!
 		@brief  default constructor that set boolean type to "true/false"
+		and spaces between '=' to true
 		*/
 		INIWriter() {
 			_boolType = new INIbooleanType;
 			*_boolType = INIbooleanType::INI_true_false;
+			_spaces = true;
 		}
 
 		/*!
-		@brief  constructor that set boolean type by param
-		@param[in] boolType  boolean type that should be set
+		@brief  constructor that set boolean type to "true/false"
+		and spaces between '=' by param
 		*/
-		INIWriter(const INIbooleanType &boolType) {
+		INIWriter(const bool spaces) {
+			_boolType = new INIbooleanType;
+			*_boolType = INIbooleanType::INI_true_false;
+			_spaces = spaces;
+		}
+
+		/*!
+		@brief  constructor that set boolean type by param and spaces 
+		between '=' to true or by param
+		@param[in] boolType  boolean type that should be set
+		@param[in] spaces  spaces between '='
+		*/
+		INIWriter(const INIbooleanType &boolType, const bool spaces = true) {
 			_boolType = new INIbooleanType;
 			*_boolType = boolType;
+			_spaces = spaces;
 		}
 
 		/*!
@@ -93,6 +108,10 @@ namespace samilton {
 		*/
 		void setBooleanType(const INIbooleanType &type) {
 			*_boolType = type;
+		}
+
+		void setSpaces(const bool val) {
+			_spaces = val;
 		}
 
 		friend std::ostream &operator<<(std::ostream& ofstr, const INIWriter& ini);
@@ -125,6 +144,7 @@ namespace samilton {
 	private:
 		std::map<std::string, INIsectionMap*> _INImap;
 		INIbooleanType *_boolType;
+		bool _spaces;
 	};
 
 	class INIstring {
@@ -280,25 +300,19 @@ namespace samilton {
 	void INIWriter::saveToFile(T fileName, const int &iosMode) const {
 		std::ofstream file(fileName, iosMode);
 
-		for (auto &i : _INImap) {
-			file << '[' << i.first << ']' << std::endl;
-
-			for (auto &j : i.second->_sectionMap) {
-				file << j.first << " = " << j.second->_str << j.second->_comment << std::endl;
-			}
-
-			file << std::endl;
-		}
+		file << *this;
 
 		file.close();
 	}
 
 	inline std::ostream &operator<<(std::ostream& ofstr, const INIWriter& ini) {
+		const auto assignment = ini._spaces ? " = " : "=";
+
 		for (auto &i : ini._INImap) {
 			ofstr << '[' << i.first << ']' << std::endl;
 
 			for (auto &j : i.second->_sectionMap) {
-				ofstr << j.first << " = " << j.second->_str << j.second->_comment << std::endl;
+				ofstr << j.first << assignment << j.second->_str << j.second->_comment << std::endl;
 			}
 
 			ofstr << std::endl;
