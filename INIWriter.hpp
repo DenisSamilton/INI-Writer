@@ -136,19 +136,17 @@ namespace samilton {
 
 		template<class T, 
 		class = typename std::enable_if<std::is_same<T, std::string>::value || std::is_same<T, const char*>::value>::type>
-		INIstring operator=(T val) {
+		void operator=(T val) {
 			_str = val;
-			return *this;
 		}
 
 		template<class T, 
 		class = typename std::enable_if<std::is_arithmetic<T>::value>::type>
-		INIstring operator=(const T &val) {
+		void operator=(const T &val) {
 			_str = std::to_string(val);
-			return *this;
 		}
 
-		INIstring operator=(const bool val) {
+		void operator=(const bool val) {
 			if (val)
 				switch (*_boolType)
 				{
@@ -217,12 +215,18 @@ namespace samilton {
 					_str = "0";
 					break;
 				}
+		}
 
+		template<class T,
+		class = typename std::enable_if<std::is_same<T, std::string>::value || std::is_same<T, const char*>::value>::type>
+		INIstring &operator()(T comment) {
+			_comment = std::string("\t; ") + comment;
 			return *this;
 		}
 
 	private:
 		std::string _str;
+		std::string _comment;
 		INIWriter::INIbooleanType *_boolType;
 
 		friend std::ostream &operator<<(std::ostream& ofstr, const INIWriter& ini);
@@ -280,7 +284,7 @@ namespace samilton {
 			file << '[' << i.first << ']' << std::endl;
 
 			for (auto &j : i.second->_sectionMap) {
-				file << j.first << " = " << j.second->_str << std::endl;
+				file << j.first << " = " << j.second->_str << j.second->_comment << std::endl;
 			}
 
 			file << std::endl;
@@ -294,7 +298,7 @@ namespace samilton {
 			ofstr << '[' << i.first << ']' << std::endl;
 
 			for (auto &j : i.second->_sectionMap) {
-				ofstr << j.first << " = " << j.second->_str << std::endl;
+				ofstr << j.first << " = " << j.second->_str << j.second->_comment << std::endl;
 			}
 
 			ofstr << std::endl;
