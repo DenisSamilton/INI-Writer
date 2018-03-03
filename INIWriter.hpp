@@ -1,9 +1,9 @@
-/*	  _____
-	 /	   |			INI Writer
-	| .ini |_  _ 		version 1.0.0
-	|	  _\ \/ /_		https://github.com/Oradle/INI-Writer
+/*    _____
+     /     |			INI Writer
+    | .ini |_  _ 		version 1.0.0
+    |     _\ \/ /_		https://github.com/Oradle/INI-Writer
 	|___ |_  ()  _|		
-	       /_/\_\
+           /_/\_\
 		   
 Licensed under the MIT License <http://opensource.org/licenses/MIT>.
 Copyright (c) 2018 Oradle
@@ -62,35 +62,60 @@ namespace samilton {
 		};
 
 		/*!
-		@brief  default constructor that set boolean type to "true/false"
-		and spaces between '=' to true
+		@brief  enum class that contain comment types which uses for
+		changing how comments will be looks in file
+		*/
+		enum class INIcommentType {
+			unixType = 0, ///< unix comment '#'
+			windowsType ///< windows comment ';'
+		};
+
+		/*!
+		@brief  default constructor that set boolean type to "true/false",
+		comment type to windows and spaces between '=' to true
 		*/
 		INIWriter() {
 			_boolType = new INIbooleanType;
 			*_boolType = INIbooleanType::INI_true_false;
-			_spaces = true;
+			_spaces = false;
+			_commentType = INIcommentType::windowsType;
 		}
 
 		/*!
-		@brief  constructor that set boolean type to "true/false"
-		and spaces between '=' by param
+		@brief  constructor that set boolean type to "true/false",
+		comment type to windows and spaces between '=' by param
 		*/
 		INIWriter(const bool spaces) {
 			_boolType = new INIbooleanType;
 			*_boolType = INIbooleanType::INI_true_false;
 			_spaces = spaces;
+			_commentType = INIcommentType::windowsType;
 		}
 
 		/*!
-		@brief  constructor that set boolean type by param and spaces 
+		@brief  constructor that set boolean type to "true/false"
+		comment type by param and spaces between '=' to false or by param
+		*/
+		INIWriter(const INIcommentType &type, const bool spaces = false) {
+			_boolType = new INIbooleanType;
+			*_boolType = INIbooleanType::INI_true_false;
+			_spaces = spaces;
+			_commentType = type;
+		}
+
+		/*!
+		@brief  constructor that set boolean type by param, 
+		comment type to windows or by param and spaces 
 		between '=' to true or by param
-		@param[in] boolType  boolean type that should be set
+		@param[in] boolType  boolean type
+		@param[in] type  comment type
 		@param[in] spaces  spaces between '='
 		*/
-		INIWriter(const INIbooleanType &boolType, const bool spaces = true) {
+		INIWriter(const INIbooleanType &boolType, const INIcommentType &type = INIcommentType::windowsType, const bool spaces = false) {
 			_boolType = new INIbooleanType;
 			*_boolType = boolType;
 			_spaces = spaces;
+			_commentType = type;
 		}
 
 		/*!
@@ -104,14 +129,25 @@ namespace samilton {
 
 		/*!
 		@brief  set boolean type by param
-		@param[in] type  boolean type that should be set
+		@param[in] type  boolean type
 		*/
 		void setBooleanType(const INIbooleanType &type) {
 			*_boolType = type;
 		}
 
+		/*!
+		@brief  set spaces between '=' by param
+		@param[in] val  spaces between '='
+		*/
 		void setSpaces(const bool val) {
 			_spaces = val;
+		}
+		/*!
+		@brief  set comment type by param
+		@param[in] type  comment type
+		*/
+		void setCommentType(const INIcommentType &type) {
+			_commentType = type;
 		}
 
 		friend std::ostream &operator<<(std::ostream& ofstr, const INIWriter& ini);
@@ -144,6 +180,7 @@ namespace samilton {
 	private:
 		std::map<std::string, INIsectionMap*> _INImap;
 		INIbooleanType *_boolType;
+		INIcommentType _commentType;
 		bool _spaces;
 	};
 
@@ -240,7 +277,7 @@ namespace samilton {
 		template<class T,
 		class = typename std::enable_if<std::is_same<T, std::string>::value || std::is_same<T, const char*>::value>::type>
 		INIstring &operator()(T comment) {
-			_comment = std::string("\t; ") + comment;
+			_comment = comment;
 			return *this;
 		}
 
@@ -307,12 +344,21 @@ namespace samilton {
 
 	inline std::ostream &operator<<(std::ostream& ofstr, const INIWriter& ini) {
 		const auto assignment = ini._spaces ? " = " : "=";
+		std::string comment;
+
+		if (ini._commentType == INIWriter::INIcommentType::windowsType)
+			comment = "\t; ";
+		else
+			comment = "\t# ";
 
 		for (auto &i : ini._INImap) {
 			ofstr << '[' << i.first << ']' << std::endl;
 
 			for (auto &j : i.second->_sectionMap) {
-				ofstr << j.first << assignment << j.second->_str << j.second->_comment << std::endl;
+				ofstr << j.first << assignment << j.second->_str;
+				if (!j.second->_comment.empty())
+					ofstr << comment << j.second->_comment;
+				ofstr << std::endl;
 			}
 
 			ofstr << std::endl;
